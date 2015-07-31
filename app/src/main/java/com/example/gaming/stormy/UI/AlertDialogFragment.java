@@ -1,10 +1,12 @@
-package com.example.gaming.stormy;
+package com.example.gaming.stormy.UI;
 
 import android.app.AlertDialog;
 import android.app.DialogFragment;
 import android.app.Dialog;
 import android.content.Context;
 import android.os.Bundle;
+
+import com.example.gaming.stormy.R;
 
 /**
  * Created by Gaming on 7/26/2015.

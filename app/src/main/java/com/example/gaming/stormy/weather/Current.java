@@ -1,4 +1,6 @@
-package com.example.gaming.stormy;
+package com.example.gaming.stormy.weather;
+
+import com.example.gaming.stormy.R;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -7,7 +9,7 @@ import java.util.TimeZone;
 /**
  * Created by Gaming on 7/27/2015.
  */
-public class CurrentWeather {
+public class Current {
     private String mIcon;
     private long mTime;
     private double mTemperature;
@@ -32,6 +34,43 @@ public class CurrentWeather {
         mIcon = icon;
     }
 
+    public int getIconID(){
+        //clear-day, clear-night, rain, snow, sleet, wind, fog, cloudy, partly-cloudy-day, or partly-cloudy-night
+        int iconId = R.drawable.clear_day; //default
+
+        if (mIcon.equals("clear-day")) {
+            iconId = R.drawable.clear_day;
+        }
+        else if (mIcon.equals("clear-night")) {
+            iconId = R.drawable.clear_night;
+        }
+        else if (mIcon.equals("rain")) {
+            iconId = R.drawable.rain;
+        }
+        else if (mIcon.equals("snow")) {
+            iconId = R.drawable.snow;
+        }
+        else if (mIcon.equals("sleet")) {
+            iconId = R.drawable.sleet;
+        }
+        else if (mIcon.equals("wind")) {
+            iconId = R.drawable.wind;
+        }
+        else if (mIcon.equals("fog")) {
+            iconId = R.drawable.fog;
+        }
+        else if (mIcon.equals("cloudy")) {
+            iconId = R.drawable.cloudy;
+        }
+        else if (mIcon.equals("partly-cloudy-day")) {
+            iconId = R.drawable.partly_cloudy;
+        }
+        else if (mIcon.equals("partly-cloudy-night")) {
+            iconId = R.drawable.cloudy_night;
+        }
+        return iconId;
+    }
+
     public long getTime() {
         return mTime;
     }
@@ -48,8 +87,8 @@ public class CurrentWeather {
         mTime = time;
     }
 
-    public double getTemperature() {
-        return mTemperature;
+    public int getTemperature() {
+        return (int) Math.round(mTemperature);
     }
 
     public void setTemperature(double temperature) {
@@ -64,8 +103,8 @@ public class CurrentWeather {
         mHumidity = humidity;
     }
 
-    public double getPrecipChance() {
-        return mPrecipChance;
+    public int getPrecipChance() {
+        return (int) Math.round(mPrecipChance * 100);
     }
 
     public void setPrecipChance(double precipChance) {
