@@ -2,6 +2,7 @@ package com.example.gaming.stormy.UI;
 
 import android.app.Activity;
 import android.content.Context;
+import android.content.Intent;
 import android.graphics.drawable.Drawable;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
@@ -14,6 +15,7 @@ import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.example.gaming.stormy.DailyForecastActivity;
 import com.example.gaming.stormy.R;
 import com.example.gaming.stormy.weather.Current;
 import com.example.gaming.stormy.weather.Day;
@@ -33,14 +35,18 @@ import java.io.IOException;
 
 import butterknife.ButterKnife;
 import butterknife.Bind;
+import butterknife.OnClick;
 
 
 public class MainActivity extends Activity {
 
-    public static final String TAG = MainActivity.class.getSimpleName();
+    public static final String TAG = MainActivity.class.getSimpleName();//debugging TAG
+    public static final String DAILY_FORECAST = "DAILY_FORECAST";//Tag for data packaging
+    public static final String HOURLY_FORECAST = "HOURLY_FORECAST";//Tag for data packaging
 
     private Forecast mForecast;
 
+    //View Injecting/ Binding data to elements in the Activity
     @Nullable @Bind(R.id.timeLabel) TextView mTimeLabel;
     @Nullable @Bind(R.id.temperatureLabel) TextView mTemperatureLabel;
     @Nullable @Bind(R.id.humidityValue) TextView mHumidityValue;
@@ -67,32 +73,35 @@ public class MainActivity extends Activity {
 
         final GPSTracker gps = new GPSTracker(context);
 
+        //Update button for weather info
         mRefreshImageView.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                getForecast(gps, latitude, longitude);
+                getForecast(gps);
             }
         });
 
-        getForecast(gps, latitude, longitude);
+        getForecast(gps);
         Log.d(TAG, "Main UI code is run");
 
     }
 
 
-    private void getForecast(GPSTracker gps, double latitude, double longitude) {
+    private void getForecast(GPSTracker gps) {
+        //Forecast.IO implementation
         String apiKey = "7ebf6dd6ca410523ad5f1a9eaa5c8822";
-
+        double latitude = gps.getLatitude();
+        double longitude = gps.getLongitude();
         String forecastUrl = "https://api.forecast.io/forecast/" + apiKey + "/" + latitude + "," + longitude;
 
         if(isNetworkAvailable()) {
             toggleRefresh();
-
+            //Data request via OKHttp
             OkHttpClient client = new OkHttpClient();
             Request request = new Request.Builder().url(forecastUrl).build();
 
             Call call = client.newCall(request);
-            call.enqueue(new Callback() {
+            call.enqueue(new Callback() {//calling in the background thread
                 @Override
                 public void onFailure(Request request, IOException e) {
                     runOnUiThread(new Runnable() {
@@ -101,7 +110,7 @@ public class MainActivity extends Activity {
                             toggleRefresh();
                         }
                     });
-                    alertUserAboutError();
+                    alertUserAboutError(); //Error message
                 }
 
                 @Override
@@ -113,10 +122,10 @@ public class MainActivity extends Activity {
                         }
                     });
                     try {
-                        String jsonData = response.body().string();
+                        String jsonData = response.body().string();//Takes the JSONData from the response as a String
                         Log.v(TAG, jsonData);
                         if (response.isSuccessful()) {
-                            mForecast = parseForecastDetails(jsonData);
+                            mForecast = parseForecastDetails(jsonData); //Takes data from certain parts of the JSONArray
                             runOnUiThread(new Runnable() {
                                 @Override
                                 public void run() {
@@ -141,6 +150,7 @@ public class MainActivity extends Activity {
         }
     }
 
+    //Visual effect for the progress bar
     private void toggleRefresh() {
         if(mProgressBar.getVisibility() == View.INVISIBLE) {
             mProgressBar.setVisibility(View.VISIBLE);
@@ -152,6 +162,7 @@ public class MainActivity extends Activity {
         }
     }
 
+    //Sets variables that will be fed into the activity elements via InjectView/Bind
     private void updateDisplay() {
         Current current = mForecast.getCurrent();
 
@@ -164,6 +175,7 @@ public class MainActivity extends Activity {
         mIconImageView.setImageDrawable(drawable);
     }
 
+    //Handles updating the current, hourly, and 7Day activities
     private Forecast parseForecastDetails(String jsonData) throws JSONException{
         Forecast forecast = new Forecast();
 
@@ -175,15 +187,18 @@ public class MainActivity extends Activity {
         return forecast;
     }
 
+    //Creates an array of Day objects that each hold data for a specific day of the week
+    //This is passed into multiple subViews in the 7Day forecast activity
     private Day[] getDailyForecast(String jsonData) throws JSONException {
-        JSONObject forecast = new JSONObject(jsonData);
+        JSONObject forecast = new JSONObject(jsonData); //Initial pull from JSONData
         String timezone = forecast.getString("timezone");
 
-        JSONObject daily = forecast.getJSONObject("daily");
+        JSONObject daily = forecast.getJSONObject("daily"); //Under the daily category in JSONData
         JSONArray data = daily.getJSONArray("data");
 
         Day[] days = new Day[data.length()];
 
+        //Populates each index with a day object
         for (int i = 0; i < data.length(); i++)
         {
             JSONObject jsonDay = data.getJSONObject(i);
@@ -200,14 +215,17 @@ public class MainActivity extends Activity {
         return days;
     }
 
+    //Creates an array of Hour objects that each hold data for a specific hour of the day
+    //This is passed into multiple subviews in the hourly forecast activity
     private Hour[] getHourlyForecast(String jsonData) throws JSONException {
         JSONObject forecast = new JSONObject(jsonData);
         String timezone = forecast.getString("timezone");
-        JSONObject hourly = forecast.getJSONObject("hourly");
+        JSONObject hourly = forecast.getJSONObject("hourly");//Under the hourly category in JSONData
         JSONArray data = hourly.getJSONArray("data");
 
         Hour[] hours = new Hour[data.length()];
 
+        //populates each index with an hour object
         for (int i = 0; i < data.length(); i++)
         {
             JSONObject jsonHour = data.getJSONObject(i);
@@ -224,6 +242,7 @@ public class MainActivity extends Activity {
         return hours;
     }
 
+    //Populates the starting activity with current data from JSON
     private Current getCurrentDetails(String jsonData) throws JSONException {
         JSONObject forecast = new JSONObject(jsonData);
         String timezone = forecast.getString("timezone");
@@ -245,6 +264,7 @@ public class MainActivity extends Activity {
         return current;
     }
 
+    //Boolean value returns true if WiFi is available
     private boolean isNetworkAvailable() {
         ConnectivityManager manager = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
         getSystemService(Context.CONNECTIVITY_SERVICE);
@@ -262,5 +282,16 @@ public class MainActivity extends Activity {
         dialog.show(getFragmentManager(), "error_dialog");
     }
 
-
+    @OnClick (R.id.dailyButton)
+    public void startDailyActivity(View view){
+        Intent intent = new Intent(this, DailyForecastActivity.class);
+        intent.putExtra(DAILY_FORECAST, mForecast.getDailyForecast());
+        startActivity(intent);
+    }
+    @OnClick(R.id.hourlyButton)
+    public void startHourlyActivity(View view){
+        Intent intent = new Intent(this, HourlyForecastActivity.class);
+        intent.putExtra(HOURLY_FORECAST, mForecast.getHourlyForecast());
+        startActivity(intent);
+    }
 }
